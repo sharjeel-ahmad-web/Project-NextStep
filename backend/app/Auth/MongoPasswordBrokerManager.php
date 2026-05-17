@@ -25,12 +25,11 @@ class MongoPasswordBrokerManager extends BasePasswordBrokerManager
 
         return new MongoDatabaseTokenRepository(
             $connection,
-            $app['hash'],
+            $this->app['hash'], // <-- FIX: Changed $app['hash'] to $this->app['hash']
             $config['table'],
             $key,
             $config['expire'],
             $config['throttle'] ?? 0
         );
-
     }
 }
