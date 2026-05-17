@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "",
+  "env": {
+    "APP_SERVICES_CACHE": "/tmp/bootstrap/cache/services.php",
+    "APP_PACKAGES_CACHE": "/tmp/bootstrap/cache/packages.php",
+    "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
+    "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
+    "APP_ROUTES_CACHE": "/tmp/bootstrap/cache/routes.php",
+    "APP_VIEW_CACHE": "/tmp/bootstrap/cache/views",
+    "LOG_CHANNEL": "stderr"
+  },
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.4",
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "src": "/storage/(.*)", "dest": "/storage/$1" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ]
+}
