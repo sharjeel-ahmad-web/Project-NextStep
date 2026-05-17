@@ -1,0 +1,104 @@
+# Prefer repo-root compose:  ..\docker-compose.yml  (same stack, one command from Project/)
+# This file still works when run from backend/:  docker compose up --build -d
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: nextstep_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: nextstep_db
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - nextstep_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextstep_backend
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      APP_NAME: NextStep
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: mongodb
+      DB_HOST: mongodb
+      DB_PORT: 27017
+      DB_DATABASE: nextstep_db
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      FILESYSTEM_DISK: local
+      MAIL_MAILER: log
+      LOG_CHANNEL: stack
+      LOG_LEVEL: debug
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      - ./storage:/app/storage
+      - ./bootstrap/cache:/app/bootstrap/cache
+      - ./php.ini:/usr/local/etc/php/php.ini:ro
+    networks:
+      - nextstep_network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: nextstep_frontend
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api
+      NODE_ENV: development
+    ports:
+      - "3000:5173"
+    volumes:
+      - ../frontend:/app
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - nextstep_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+networks:
+  nextstep_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  frontend_node_modules:
+    driver: local
